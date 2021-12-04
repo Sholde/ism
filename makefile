@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-Wall
 OFLAGS=-O2 -march=native -march=native
 DFLAGS=-g
-LFLAGS=-lm
+LFLAGS=
 
 TARGET=main
 
