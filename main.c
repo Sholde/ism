@@ -153,7 +153,7 @@ struct lennard_jones *lennard_jones(const struct particle *restrict p)
   //
   lj->energy = 0.0;
 
-  // Compute forces
+  // Compute
   for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
     {
       for (uint64_t j = i + 1; j < N_PARTICLES_LOCAL; j++)
@@ -165,6 +165,10 @@ struct lennard_jones *lennard_jones(const struct particle *restrict p)
           const double u_ij =
             EPSILON_STAR * (hexa(R_STAR_distance) - 2.0 * cube(R_STAR_distance));
 
+          // Update energy
+          lj->energy += u_ij;
+
+          // Update forces
           const double du_ij =
             -48.0 * EPSILON_STAR * (septa(R_STAR_distance) - quad(R_STAR_distance));
 
@@ -177,9 +181,6 @@ struct lennard_jones *lennard_jones(const struct particle *restrict p)
           lj->f[j][i].fx = - lj->f[i][j].fx;
           lj->f[j][i].fy = - lj->f[i][j].fy;
           lj->f[j][i].fz = - lj->f[i][j].fz;
-
-          // Update energy
-          lj->energy += u_ij;
         }
 
       // Update force on particle i with i
@@ -188,6 +189,7 @@ struct lennard_jones *lennard_jones(const struct particle *restrict p)
       lj->f[i][i].fz = 0.0;
     }
 
+  //
   lj->energy *= 4.0;
 
   return lj;
@@ -210,7 +212,13 @@ void print_energy(const struct lennard_jones *restrict lj)
 uint64_t check_forces(const struct force **restrict f)
 {
   uint64_t error = 0;
-  uint64_t count = 0;
+
+  struct force sum =
+    {
+      .fx = 0.0,
+      .fy = 0.0,
+      .fz = 0.0
+    };
 
   for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
     {
@@ -222,7 +230,7 @@ uint64_t check_forces(const struct force **restrict f)
           .fz = 0.0
         };
 
-      // Sum
+      // Sum on particle i
       for (uint64_t j = 0; j < N_PARTICLES_LOCAL; j++)
         {
           sum_i.fx += f[i][j].fx;
@@ -230,33 +238,39 @@ uint64_t check_forces(const struct force **restrict f)
           sum_i.fz += f[i][j].fz;
         }
 
-      // Get absolute value of sum to compare with a tolerance
-      struct force abs_sum_i =
-        {
-          .fx = abs_double(sum_i.fx),
-          .fy = abs_double(sum_i.fy),
-          .fz = abs_double(sum_i.fz)
-        };
-
-      // Compare with a tolerance
-      double tolerance = 1.0e-8;
-
-      if (abs_sum_i.fx > tolerance
-          || abs_sum_i.fy > tolerance
-          || abs_sum_i.fz > tolerance)
-        {
-#ifdef DEBUG
-          fprintf(stderr, "==error== %s at line %d: "
-                  "sum of forces apply on particle %lu are not null\n"
-                  "            -> x y z: %lf %lf %lf\n\n",
-                  __func__, __LINE__, i, sum_i.fx, sum_i.fy, sum_i.fz);
-#endif
-          count++;
-          error = 1;
-        }
+      // Update global sum
+      sum.fx += sum_i.fx;
+      sum.fy += sum_i.fy;
+      sum.fz += sum_i.fz;
     }
 
-  printf("number of non-zero force sums: %lu\n", count);
+  // Get absolute value of sum to compare with a tolerance
+  struct force abs_sum =
+    {
+      .fx = abs_double(sum.fx),
+      .fy = abs_double(sum.fy),
+      .fz = abs_double(sum.fz)
+    };
+
+  // Compare with a tolerance
+  double tolerance = 1.0e-8;
+
+  if (abs_sum.fx > tolerance
+      || abs_sum.fy > tolerance
+      || abs_sum.fz > tolerance)
+    {
+      fprintf(stderr, "==error== %s at line %d: "
+              "sum of forces apply on particles are NOT null:\n"
+              "            -> fx: %e, fy: %e,  fz: %e\n",
+              __func__, __LINE__, sum.fx, sum.fy, sum.fz);
+      error = 1;
+    }
+  else
+    {
+      printf("sum of forces apply on particles are null:\n"
+             "  -> fx: %e, fy: %e, fz: %e\n",
+             sum.fx, sum.fy, sum.fz);
+    }
 
   return error;
 }
