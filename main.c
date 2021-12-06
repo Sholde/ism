@@ -2,14 +2,14 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <math.h>
+#include <time.h>
 
 // Simulation constants
 #define R_STAR       3.0
 #define EPSILON_STAR 0.2
 #define L            30.0
 #define N_SYM        27
-#define TOLERANCE    10e-7
+#define TOLERANCE    1.0e-7
 
 // General constant
 #define ALIGN 64
@@ -389,7 +389,7 @@ struct lennard_jones *periodical_lennard_jones(const struct particle
     }
 
   //
-  plj->energy *= 4.0 * EPSILON_STAR;
+  plj->energy *= 2.0 * EPSILON_STAR;
 
   return plj;
 }
@@ -410,29 +410,52 @@ int main(int argc, char **argv)
       LOCAL_EQUAL_TOTAL = 0;
     }
 
+  // Structure to monitoring
+  struct timespec clock;
+  double before;
+  double after;
+
   // Particles
   struct particle *restrict p = get_particles(argv[1]);
   //print_particles(p);
 
+  // Take time before
+  clock_gettime(CLOCK_MONOTONIC, &clock);
+  before = clock.tv_sec + clock.tv_nsec * 1e-9;
+
   // Force and Energy
   struct lennard_jones *restrict lj = lennard_jones(p);
+
+  // Take time after
+  clock_gettime(CLOCK_MONOTONIC, &clock);
+  after = clock.tv_sec + clock.tv_nsec * 1e-9;
 
   printf("Lennard Jones:\n");
   print_energy(lj);
   uint64_t error __attribute__((unused)) = check_forces(lj->f, TOLERANCE);
+  printf("Take: %lf seconds\n", after - before);
   printf("\n");
 
   // Generate translation vectors
   struct translation_vector *restrict tv = init_translation_vectors(N_SYM);
   //print_translation_vectors(tv, N_SYM);
 
+  // Take time before
+  clock_gettime(CLOCK_MONOTONIC, &clock);
+  before = clock.tv_sec + clock.tv_nsec * 1e-9;
+
   // Force and Energy
   const double r_cut = 10.0;
   struct lennard_jones *restrict plj = periodical_lennard_jones(p, tv, r_cut, N_SYM);
 
+  // Take time after
+  clock_gettime(CLOCK_MONOTONIC, &clock);
+  after = clock.tv_sec + clock.tv_nsec * 1e-9;
+
   printf("Periodical Lennard Jones:\n");
   print_energy(plj);
   uint64_t plj_error __attribute__((unused)) = check_forces(plj->f, TOLERANCE);
+  printf("Take: %lf seconds\n", after - before);
   printf("\n");
 
   // Release memory
