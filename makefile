@@ -1,26 +1,57 @@
+# Compilation
 CC=gcc
 CFLAGS=-Wall -Wextra
 OFLAGS=-O3 -march=native -mtune=native
 DFLAGS=-g
 LFLAGS=
+WFLAGS=-Wno-incompatible-pointer-types
 
+# Linking
 TARGET=main
+LINKER=$(CC)
 
+# Diretories
+SRCDIR=src
+OBJDIR=obj
+BINDIR=bin
+
+# Get filenames
+SRCS=$(wildcard $(SRCDIR)/*.c)
+OBJS=$(SRCS:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+
+# General
+Q=@
+
+# Phony
 .PHONY: all clean
 
-all: $(TARGET)
+# Target
+all: dir $(BINDIR)/$(TARGET)
 
-$(TARGET): main.o common.o lennard_jones.o
-	$(CC) $(LFLAGS) $^ -o $@
+dir:
+	@mkdir -p src obj bin
 
-%.o: %.c
-	$(CC) -c $(CFLAGS) $(OFLAGS) $(DFLAGS) $< -o $@
+$(BINDIR)/$(TARGET): $(OBJS)
+	$(Q) $(LINKER) $(LFLAGS)$^ -o $@
+	@if [ "$(Q)" == "@" ] ; then \
+		echo "Linking complete!" ; \
+		echo "Creating a binary in "$@ ; \
+	fi
 
-main.c: lennard_jones.c lennard_jones.h common.c common.h helper.h
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	$(Q) $(CC) -c $(CFLAGS) $(OFLAGS) $(DFLAGS) $(WFLAGS) $< -o $@
+	@if [ "$(Q)" == "@" ] ; then \
+		echo "Compiled "$<" successfully!" ; \
+	fi
 
-lennard_jones.c: lennard_jones.h common.c common.h helper.h
+$(SRCDIR)/main.c: $(SRCDIR)/lennard_jones.c $(SRCDIR)/lennard_jones.h $(SRCDIR)/common.c $(SRCDIR)/common.h $(SRCDIR)/helper.h
 
-common.c: common.h helper.h
+$(SRCDIR)/lennard_jones.c: $(SRCDIR)/lennard_jones.h $(SRCDIR)/common.c $(SRCDIR)/common.h $(SRCDIR)/helper.h
+
+$(SRCDIR)/common.c: $(SRCDIR)/common.h $(SRCDIR)/helper.h
 
 clean:
-	rm -Rf *~ *.o $(TARGET)
+	$(Q) rm -Rf *~ **/*~ $(OBJDIR) $(BINDIR)
+	@if [ "$(Q)" == "@" ] ; then \
+		echo "Cleanup complete!" ; \
+	fi
