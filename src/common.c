@@ -4,7 +4,7 @@
 #include "helper.h"
 #include "common.h"
 
-struct particle *get_particles(char *restrict filename)
+struct particle *get_particles(const char *restrict filename)
 {
   // Begin exploration of the file
   FILE *restrict  stream = fopen(filename, "r");

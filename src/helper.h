@@ -35,6 +35,7 @@ extern uint64_t N_PARTICLES_LOCAL;
 extern uint64_t LOCAL_EQUAL_TOTAL;
 extern uint64_t N_DL;
 
+// Handle errors
 enum
   {
     ERR_NONE,
@@ -42,6 +43,7 @@ enum
     ERR_OPEN
   };
 
+// Particles
 struct particle
 {
   double x;
@@ -49,6 +51,7 @@ struct particle
   double z;
 };
 
+// Forces
 struct force
 {
   double fx;
@@ -56,6 +59,7 @@ struct force
   double fz;
 };
 
+// Lennard jones
 struct lennard_jones
 {
   double energy;
@@ -71,6 +75,7 @@ struct translation_vector
   double z;
 };
 
+// Velocity verlet
 struct kinetic_moment
 {
   double px;

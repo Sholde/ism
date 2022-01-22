@@ -1,7 +1,7 @@
 # Compilation
 CC=gcc
 CFLAGS=-Wall -Wextra
-OFLAGS=-O3 -march=native -mtune=native
+OFLAGS=-O3 -march=native -mtune=native # -Ofast -funroll-loops -finline-functions -ftree-vectorize
 DFLAGS=-g
 LFLAGS=-lm
 WFLAGS=-Wno-incompatible-pointer-types

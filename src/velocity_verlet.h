@@ -13,6 +13,7 @@ void free_kinetic_moment(struct kinetic_moment *restrict km);
 //
 void velocity_verlet(struct particle *restrict p,
                      struct translation_vector *restrict tv,
+                     struct lennard_jones *restrict plj,
                      struct kinetic_moment *restrict km,
                      const double r_cut);
 

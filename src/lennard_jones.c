@@ -4,7 +4,8 @@
 #include "common.h"
 #include "lennard_jones.h"
 
-struct lennard_jones *lennard_jones(const struct particle *restrict p)
+//
+struct lennard_jones *init_lennard_jones(void)
 {
   // Allocate memory
   struct lennard_jones *restrict lj =
@@ -21,6 +22,66 @@ struct lennard_jones *lennard_jones(const struct particle *restrict p)
 
   // Init energy to 0
   lj->energy = 0.0;
+
+  // Init force
+  for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
+    {
+      for (uint64_t j = 0; j < N_PARTICLES_LOCAL; j++)
+        {
+          lj->f[i][j].fx = 0.0;
+          lj->f[i][j].fy = 0.0;
+          lj->f[i][j].fz = 0.0;
+        }
+    }
+
+  // Init sum of force apply on particle i to 0
+  for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
+    {
+      lj->sum_i[i].fx = 0.0;
+      lj->sum_i[i].fy = 0.0;
+      lj->sum_i[i].fz = 0.0;
+    }
+
+  // Init sum of force to 0
+  lj->sum->fx = 0.0;
+  lj->sum->fy = 0.0;
+  lj->sum->fz = 0.0;
+
+  return lj;
+}
+
+//
+void free_lennard_jones(struct lennard_jones *restrict lj)
+{
+  for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
+    free(lj->f[i]);
+
+  free(lj->sum_i);
+  free(lj->sum);
+  free(lj->f);
+  free(lj);
+}
+
+//
+void lennard_jones(struct lennard_jones *restrict lj,
+                   const struct particle *restrict p)
+{
+  // Init energy to 0
+  lj->energy = 0.0;
+
+  // Init force
+  for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
+    {
+      lj->f[i] =
+        aligned_alloc(ALIGN, sizeof(struct force) * N_PARTICLES_LOCAL);
+
+      for (uint64_t j = 0; j < N_PARTICLES_LOCAL; j++)
+        {
+          lj->f[i][j].fx = 0.0;
+          lj->f[i][j].fy = 0.0;
+          lj->f[i][j].fz = 0.0;
+        }
+    }
 
   // Init sum of force apply on particle i to 0
   for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
@@ -85,46 +146,19 @@ struct lennard_jones *lennard_jones(const struct particle *restrict p)
       lj->sum->fz += lj->sum_i[i].fz;
     }
 
-  //
+  // Update energy
   lj->energy *= 4.0 * EPSILON_STAR;
-
-  return lj;
 }
 
-void free_lennard_jones(struct lennard_jones *restrict lj)
+//
+void periodical_lennard_jones(struct lennard_jones *restrict plj,
+                              const struct particle *restrict p,
+                              const struct translation_vector *restrict tv,
+                              const double r_cut, const uint64_t n)
 {
-  for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
-    free(lj->f[i]);
-
-  free(lj->sum_i);
-  free(lj->sum);
-  free(lj->f);
-  free(lj);
-}
-
-struct lennard_jones *periodical_lennard_jones(const struct particle
-                                               *restrict p,
-                                               const struct translation_vector
-                                               *restrict tv,
-                                               const double r_cut,
-                                               const uint64_t n)
-{
-  // Allocate memory
-  struct lennard_jones *restrict plj =
-    aligned_alloc(ALIGN, sizeof(struct lennard_jones));
-
-  plj->f =
-    aligned_alloc(ALIGN, sizeof(struct force *restrict) * N_PARTICLES_LOCAL);
-
-  plj->sum_i = aligned_alloc(ALIGN, sizeof(struct force) * N_PARTICLES_LOCAL);
-  plj->sum = aligned_alloc(ALIGN, sizeof(struct force));
-
   // Init force
   for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
     {
-      plj->f[i] =
-        aligned_alloc(ALIGN, sizeof(struct force) * N_PARTICLES_LOCAL);
-
       for (uint64_t j = 0; j < N_PARTICLES_LOCAL; j++)
         {
           plj->f[i][j].fx = 0.0;
@@ -210,8 +244,6 @@ struct lennard_jones *periodical_lennard_jones(const struct particle
       plj->sum->fz += plj->sum_i[i].fz;
     }
 
-  //
+  // Update energy
   plj->energy *= 2.0 * EPSILON_STAR;
-
-  return plj;
 }

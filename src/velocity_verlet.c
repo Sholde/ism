@@ -138,12 +138,12 @@ void free_kinetic_moment(struct kinetic_moment *restrict km)
 
 void velocity_verlet(struct particle *restrict p,
                      struct translation_vector *restrict tv,
+                     struct lennard_jones *restrict plj,
                      struct kinetic_moment *restrict km,
                      const double r_cut)
 {
   // Compute forces
-  struct lennard_jones *restrict plj =
-    periodical_lennard_jones(p, tv, r_cut, N_SYM);
+  periodical_lennard_jones(plj, p, tv, r_cut, N_SYM);
 
   for (uint64_t i = 0; i < N_PARTICLES_TOTAL; i++)
     {
@@ -158,10 +158,8 @@ void velocity_verlet(struct particle *restrict p,
       p[i].z += km[i].pz / M_I;
     }
 
-  free_lennard_jones(plj);
-
   // Re-compute forces
-  plj = periodical_lennard_jones(p, tv, r_cut, N_SYM);
+  periodical_lennard_jones(plj, p, tv, r_cut, N_SYM);
 
   for (uint64_t i = 0; i < N_PARTICLES_TOTAL; i++)
     {
@@ -170,6 +168,4 @@ void velocity_verlet(struct particle *restrict p,
       km[i].py -= plj->sum_i[i].fy / 2.0;
       km[i].pz -= plj->sum_i[i].fz / 2.0;
     }
-
-  free_lennard_jones(plj);
 }
