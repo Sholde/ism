@@ -7,11 +7,13 @@
 #include "helper.h"
 #include "common.h"
 #include "lennard_jones.h"
+#include "velocity_verlet.h"
 
 // Global variable
 uint64_t N_PARTICLES_TOTAL = 0;
 uint64_t N_PARTICLES_LOCAL = 0;
 uint64_t LOCAL_EQUAL_TOTAL = 1;
+uint64_t N_DL = 0;
 
 int main(int argc, char **argv)
 {
@@ -76,6 +78,34 @@ int main(int argc, char **argv)
   uint64_t plj_error __attribute__((unused)) = check_forces(plj->f, TOLERANCE);
   printf("Take: %lf seconds\n", after - before);
   printf("\n");
+
+  printf("sum of forces apply on particles are null:\n"
+         "  -> fx: %13e, fy: %13e, fz: %13e\n",
+         lj->sum->fx, lj->sum->fy, lj->sum->fz);
+  printf("sum of forces apply on particles are null:\n"
+         "  -> fx: %13e, fy: %13e, fz: %13e\n",
+         plj->sum->fx, plj->sum->fy, plj->sum->fz);
+
+  // Velocity verlet
+  struct kinetic_moment *restrict km = init_velocity_verlet();
+  struct ket *restrict ket = compute_kinetic_energy_and_temperature(km);
+  printf("\ninit   temperature: %e\n", ket->kinetic_energy);
+  free_ket(ket);
+
+  uint64_t m_step = 10;
+
+  for (uint64_t n = 0; n < m_step; n++)
+    {
+      //
+      velocity_verlet(p, tv, km, r_cut);
+
+      //
+      ket = compute_kinetic_energy_and_temperature(km);
+      printf("step %ld temperature: %e\n", n, ket->kinetic_energy);
+      free_ket(ket);
+    }
+
+  free_kinetic_moment(km);
 
   // Release memory
   free_lennard_jones(plj);

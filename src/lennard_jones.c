@@ -6,18 +6,34 @@
 
 struct lennard_jones *lennard_jones(const struct particle *restrict p)
 {
-  // Init lennard_jones
+  // Allocate memory
   struct lennard_jones *restrict lj =
     aligned_alloc(ALIGN, sizeof(struct lennard_jones));
 
-  // Init forces
-  lj->f = aligned_alloc(ALIGN, sizeof(struct force *restrict) * N_PARTICLES_LOCAL);
+  lj->f =
+    aligned_alloc(ALIGN, sizeof(struct force *restrict) * N_PARTICLES_LOCAL);
 
   for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
     lj->f[i] = aligned_alloc(ALIGN, sizeof(struct force) * N_PARTICLES_LOCAL);
 
+  lj->sum_i = aligned_alloc(ALIGN, sizeof(struct force) * N_PARTICLES_LOCAL);
+  lj->sum = aligned_alloc(ALIGN, sizeof(struct force));
+
   // Init energy to 0
   lj->energy = 0.0;
+
+  // Init sum of force apply on particle i to 0
+  for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
+    {
+      lj->sum_i[i].fx = 0.0;
+      lj->sum_i[i].fy = 0.0;
+      lj->sum_i[i].fz = 0.0;
+    }
+
+  // Init sum of force to 0
+  lj->sum->fx = 0.0;
+  lj->sum->fy = 0.0;
+  lj->sum->fz = 0.0;
 
   // Compute
   for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
@@ -47,12 +63,26 @@ struct lennard_jones *lennard_jones(const struct particle *restrict p)
           lj->f[j][i].fx = - lj->f[i][j].fx;
           lj->f[j][i].fy = - lj->f[i][j].fy;
           lj->f[j][i].fz = - lj->f[i][j].fz;
+
+          // Update sum
+          lj->sum_i[i].fx += lj->f[i][j].fx;
+          lj->sum_i[i].fy += lj->f[i][j].fy;
+          lj->sum_i[i].fz += lj->f[i][j].fz;
+
+          lj->sum_i[j].fx += lj->f[j][i].fx;
+          lj->sum_i[j].fy += lj->f[j][i].fy;
+          lj->sum_i[j].fz += lj->f[j][i].fz;
         }
 
       // Update force on particle i with i
       lj->f[i][i].fx = 0.0;
       lj->f[i][i].fy = 0.0;
       lj->f[i][i].fz = 0.0;
+
+      // Update sum
+      lj->sum->fx += lj->sum_i[i].fx;
+      lj->sum->fy += lj->sum_i[i].fy;
+      lj->sum->fz += lj->sum_i[i].fz;
     }
 
   //
@@ -66,6 +96,8 @@ void free_lennard_jones(struct lennard_jones *restrict lj)
   for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
     free(lj->f[i]);
 
+  free(lj->sum_i);
+  free(lj->sum);
   free(lj->f);
   free(lj);
 }
@@ -77,16 +109,21 @@ struct lennard_jones *periodical_lennard_jones(const struct particle
                                                const double r_cut,
                                                const uint64_t n)
 {
-  // Init lennard_jones
+  // Allocate memory
   struct lennard_jones *restrict plj =
     aligned_alloc(ALIGN, sizeof(struct lennard_jones));
 
-  // Init forces
-  plj->f = aligned_alloc(ALIGN, sizeof(struct force *restrict) * N_PARTICLES_LOCAL);
+  plj->f =
+    aligned_alloc(ALIGN, sizeof(struct force *restrict) * N_PARTICLES_LOCAL);
 
+  plj->sum_i = aligned_alloc(ALIGN, sizeof(struct force) * N_PARTICLES_LOCAL);
+  plj->sum = aligned_alloc(ALIGN, sizeof(struct force));
+
+  // Init force
   for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
     {
-      plj->f[i] = aligned_alloc(ALIGN, sizeof(struct force) * N_PARTICLES_LOCAL);
+      plj->f[i] =
+        aligned_alloc(ALIGN, sizeof(struct force) * N_PARTICLES_LOCAL);
 
       for (uint64_t j = 0; j < N_PARTICLES_LOCAL; j++)
         {
@@ -96,8 +133,21 @@ struct lennard_jones *periodical_lennard_jones(const struct particle
         }
     }
 
-  //
+  // Init energy to 0
   plj->energy = 0.0;
+
+  // Init sum of force apply on particle i to 0
+  for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
+    {
+      plj->sum_i[i].fx = 0.0;
+      plj->sum_i[i].fy = 0.0;
+      plj->sum_i[i].fz = 0.0;
+    }
+
+  // Init sum of force to 0
+  plj->sum->fx = 0.0;
+  plj->sum->fy = 0.0;
+  plj->sum->fz = 0.0;
 
   // Compute
   for (uint64_t k = 0; k < n; k++)
@@ -141,6 +191,23 @@ struct lennard_jones *periodical_lennard_jones(const struct particle
               plj->f[i][j].fz += du_ij * (p[i].z - tmp_j.z);
             }
         }
+    }
+
+  // Update sum
+  for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
+    {
+      // Update sum_i
+      for (uint64_t j = 0; j < N_PARTICLES_LOCAL; j++)
+        {
+          plj->sum_i[i].fx += plj->f[i][j].fx;
+          plj->sum_i[i].fy += plj->f[i][j].fy;
+          plj->sum_i[i].fz += plj->f[i][j].fz;
+        }
+
+      // Update sum
+      plj->sum->fx += plj->sum_i[i].fx;
+      plj->sum->fy += plj->sum_i[i].fy;
+      plj->sum->fz += plj->sum_i[i].fz;
     }
 
   //

@@ -3,7 +3,7 @@ CC=gcc
 CFLAGS=-Wall -Wextra
 OFLAGS=-O3 -march=native -mtune=native
 DFLAGS=-g
-LFLAGS=
+LFLAGS=-lm
 WFLAGS=-Wno-incompatible-pointer-types
 
 # Linking
@@ -32,7 +32,7 @@ dir:
 	@mkdir -p src obj bin
 
 $(BINDIR)/$(TARGET): $(OBJS)
-	$(Q) $(LINKER) $(LFLAGS)$^ -o $@
+	$(Q) $(LINKER) $(LFLAGS) $^ -o $@
 	@if [ "$(Q)" == "@" ] ; then \
 		echo "Linking complete!" ; \
 		echo "Creating a binary in "$@ ; \
@@ -44,12 +44,22 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 		echo "Compiled "$<" successfully!" ; \
 	fi
 
-$(SRCDIR)/main.c: $(SRCDIR)/lennard_jones.c $(SRCDIR)/lennard_jones.h $(SRCDIR)/common.c $(SRCDIR)/common.h $(SRCDIR)/helper.h
+# Dependencies variable
+VELOCITY_VERLET= $(SRCDIR)/velocity_verlet.c $(SRCDIR)/velocity_verlet.h
+LENNARD_JONES= $(SRCDIR)/lennard_jones.c $(SRCDIR)/lennard_jones.h
+COMMON= $(SRCDIR)/common.c $(SRCDIR)/common.h
+HELPER= $(SRCDIR)/helper.h
 
-$(SRCDIR)/lennard_jones.c: $(SRCDIR)/lennard_jones.h $(SRCDIR)/common.c $(SRCDIR)/common.h $(SRCDIR)/helper.h
+# Dependencies target
+$(SRCDIR)/main.c: $(VELOCITY_VERLET) $(LENNARD_JONES) $(COMMON) $(HELPER)
 
-$(SRCDIR)/common.c: $(SRCDIR)/common.h $(SRCDIR)/helper.h
+$(SRCDIR)/velocity_verlet.c: $(SRCDIR)/velocity_verlet.h $(LENNARD_JONES) $(COMMON) $(HELPER)
 
+$(SRCDIR)/lennard_jones.c: $(SRCDIR)/lennard_jones.h  $(COMMON) $(HELPER)
+
+$(SRCDIR)/common.c: $(SRCDIR)/common.h $(HELPER)
+
+# Cleanup
 clean:
 	$(Q) rm -Rf *~ **/*~ $(OBJDIR) $(BINDIR)
 	@if [ "$(Q)" == "@" ] ; then \
