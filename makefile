@@ -38,7 +38,7 @@ $(BINDIR)/$(TARGET): $(OBJS)
 		echo "Creating a binary in "$@ ; \
 	fi
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c
+$(OBJDIR)/%.o: $(SRCDIR)/%.c $(SRCDIR)/%.h
 	$(Q) $(CC) -c $(CFLAGS) $(OFLAGS) $(DFLAGS) $(WFLAGS) $< -o $@
 	@if [ "$(Q)" == "@" ] ; then \
 		echo "Compiled "$<" successfully!" ; \
@@ -53,11 +53,11 @@ HELPER= $(SRCDIR)/helper.h
 # Dependencies target
 $(SRCDIR)/main.c: $(VELOCITY_VERLET) $(LENNARD_JONES) $(COMMON) $(HELPER)
 
-$(SRCDIR)/velocity_verlet.c: $(SRCDIR)/velocity_verlet.h $(LENNARD_JONES) $(COMMON) $(HELPER)
+$(SRCDIR)/velocity_verlet.c: $(LENNARD_JONES) $(COMMON) $(HELPER)
 
-$(SRCDIR)/lennard_jones.c: $(SRCDIR)/lennard_jones.h  $(COMMON) $(HELPER)
+$(SRCDIR)/lennard_jones.c: $(COMMON) $(HELPER)
 
-$(SRCDIR)/common.c: $(SRCDIR)/common.h $(HELPER)
+$(SRCDIR)/common.c: $(HELPER)
 
 # Cleanup
 clean:

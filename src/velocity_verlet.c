@@ -23,7 +23,7 @@ struct ket *compute_kinetic_energy_and_temperature(const struct kinetic_moment
 
   for (uint64_t i = 0; i < N_PARTICLES_TOTAL; i++)
     {
-      kinetic_energy += square(km[i].px) * square(km[i].py) * square(km[i].pz);
+      kinetic_energy += square(km[i].px) + square(km[i].py) + square(km[i].pz);
     }
 
   kinetic_energy /= (M_I * FORCE_CONVERSION_x2);
@@ -148,14 +148,17 @@ void velocity_verlet(struct particle *restrict p,
   for (uint64_t i = 0; i < N_PARTICLES_TOTAL; i++)
     {
       // Update kinetic moments
-      km[i].px -= plj->sum_i[i].fx / 2.0;
-      km[i].py -= plj->sum_i[i].fy / 2.0;
-      km[i].pz -= plj->sum_i[i].fz / 2.0;
+      km[i].px -= DT * FORCE_CONVERSION * plj->sum_i[i].fx / 2.0;
+      km[i].py -= DT * FORCE_CONVERSION * plj->sum_i[i].fy / 2.0;
+      km[i].pz -= DT * FORCE_CONVERSION * plj->sum_i[i].fz / 2.0;
+    }
 
+  for (uint64_t i = 0; i < N_PARTICLES_TOTAL; i++)
+    {
       // Update positions
-      p[i].x += km[i].px / M_I;
-      p[i].y += km[i].py / M_I;
-      p[i].z += km[i].pz / M_I;
+      p[i].x += DT * km[i].px / M_I;
+      p[i].y += DT * km[i].py / M_I;
+      p[i].z += DT * km[i].pz / M_I;
     }
 
   // Re-compute forces
@@ -163,9 +166,9 @@ void velocity_verlet(struct particle *restrict p,
 
   for (uint64_t i = 0; i < N_PARTICLES_TOTAL; i++)
     {
-      // Update kinetic moment
-      km[i].px -= plj->sum_i[i].fx / 2.0;
-      km[i].py -= plj->sum_i[i].fy / 2.0;
-      km[i].pz -= plj->sum_i[i].fz / 2.0;
+      // Update kinetic moments
+      km[i].px -= DT * FORCE_CONVERSION * plj->sum_i[i].fx / 2.0;
+      km[i].py -= DT * FORCE_CONVERSION * plj->sum_i[i].fy / 2.0;
+      km[i].pz -= DT * FORCE_CONVERSION * plj->sum_i[i].fz / 2.0;
     }
 }

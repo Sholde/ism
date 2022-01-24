@@ -72,9 +72,6 @@ void lennard_jones(struct lennard_jones *restrict lj,
   // Init force
   for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
     {
-      lj->f[i] =
-        aligned_alloc(ALIGN, sizeof(struct force) * N_PARTICLES_LOCAL);
-
       for (uint64_t j = 0; j < N_PARTICLES_LOCAL; j++)
         {
           lj->f[i][j].fx = 0.0;
@@ -156,6 +153,9 @@ void periodical_lennard_jones(struct lennard_jones *restrict plj,
                               const struct translation_vector *restrict tv,
                               const double r_cut, const uint64_t n)
 {
+  // Init energy to 0
+  plj->energy = 0.0;
+
   // Init force
   for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
     {
@@ -166,9 +166,6 @@ void periodical_lennard_jones(struct lennard_jones *restrict plj,
           plj->f[i][j].fz = 0.0;
         }
     }
-
-  // Init energy to 0
-  plj->energy = 0.0;
 
   // Init sum of force apply on particle i to 0
   for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)

@@ -66,7 +66,7 @@ static void run_lennard_jones(const char *restrict filename)
   after = simulation_clock.tv_sec + simulation_clock.tv_nsec * 1e-9;
 
   // Print
-  printf("Lennard Jones:\n");
+  printf("== Lennard Jones ==\n");
   print_energy(lj);
   uint64_t error __attribute__((unused)) = check_forces(lj->f, TOLERANCE);
   printf("Take: %lf seconds\n", after - before);
@@ -107,7 +107,7 @@ static void run_periodical_lennard_jones(const char *restrict filename)
   after = simulation_clock.tv_sec + simulation_clock.tv_nsec * 1e-9;
 
   // Print
-  printf("Periodical Lennard Jones:\n");
+  printf("== Periodical Lennard Jones ==\n");
   print_energy(plj);
   uint64_t plj_error __attribute__((unused)) = check_forces(plj->f, TOLERANCE);
   printf("Take: %lf seconds\n", after - before);
@@ -139,36 +139,69 @@ static void run_velocity_verlet(const char *restrict filename)
   const double r_cut = 10.0;
 
   // Velocity verlet
-  printf("\nVelocity Verlet:\n");
+  printf("\n== Velocity Verlet ==\n");
 
   struct kinetic_moment *restrict km = init_velocity_verlet();
-  struct ket *restrict ket = compute_kinetic_energy_and_temperature(km);
-  printf("init   temperature: %e\n", ket->kinetic_energy);
-  free_ket(ket);
+  periodical_lennard_jones(plj, p, tv, r_cut, N_SYM);
 
   //
-  uint64_t m_step = 10;
+  uint64_t n_step = 10;
 
   // Take time before
   clock_gettime(CLOCK_MONOTONIC, &simulation_clock);
   before = simulation_clock.tv_sec + simulation_clock.tv_nsec * 1e-9;
 
-  for (uint64_t n = 0; n < m_step; n++)
+  printf("\n");
+  printf("           "
+         "%14s "
+         "%15s "
+         "%16s "
+         "%18s "
+         "%17s "
+         "\n",
+         "TEMPERATURE",
+         "TOTAL_ENERGY",
+         "KINETIC_ENERGY",
+         "POTENTIAL_ENERGY",
+         "FORCES_SUM_NORM");
+
+  struct ket *restrict ket = compute_kinetic_energy_and_temperature(km);
+  printf("STEP %2d -- ", 0);
+  printf("%14e ", ket->temperature);
+  printf("%15e ", ket->kinetic_energy + plj->energy);
+  printf("%16e ", ket->kinetic_energy);
+  printf("%18e ", plj->energy);
+  printf("%17e ", abs_double(plj->sum->fx + plj->sum->fy + plj->sum->fz));
+  printf("\n");
+  free_ket(ket);
+
+  for (uint64_t n = 1; n < n_step + 1; n++)
     {
       //
       velocity_verlet(p, tv, plj, km, r_cut);
 
       //
       ket = compute_kinetic_energy_and_temperature(km);
-      printf("step %ld temperature: %e\n", n, ket->kinetic_energy);
+
+      printf("STEP %2ld -- ", n);
+      printf("%14e ", ket->temperature);
+      printf("%15e ", ket->kinetic_energy + plj->energy);
+      printf("%16e ", ket->kinetic_energy);
+      printf("%18e ", plj->energy);
+      printf("%17e ", square(plj->sum->fx) + square(plj->sum->fy) + square(plj->sum->fz));
+      printf("\n");
+
       free_ket(ket);
     }
+
+  printf("\n");
 
   // Take time after
   clock_gettime(CLOCK_MONOTONIC, &simulation_clock);
   after = simulation_clock.tv_sec + simulation_clock.tv_nsec * 1e-9;
 
   // Print
+  printf("Simulate: %e seconds\n", (double)n_step * DT);
   printf("Take: %lf seconds\n", after - before);
   printf("\n");
 
