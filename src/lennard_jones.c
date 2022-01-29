@@ -5,6 +5,34 @@
 #include "lennard_jones.h"
 
 //
+static void reset_lennard_jones(struct lennard_jones *lj)
+{
+  // Init energy to 0
+  lj->energy = 0.0;
+
+  // Init force
+  for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
+    {
+      for (uint64_t j = 0; j < N_PARTICLES_LOCAL; j++)
+        {
+          lj->f[i][j].fx = 0.0;
+          lj->f[i][j].fy = 0.0;
+          lj->f[i][j].fz = 0.0;
+        }
+
+      // Init sum of force apply on particle i to 0
+      lj->sum_i[i].fx = 0.0;
+      lj->sum_i[i].fy = 0.0;
+      lj->sum_i[i].fz = 0.0;
+    }
+
+  // Init sum of force to 0
+  lj->sum->fx = 0.0;
+  lj->sum->fy = 0.0;
+  lj->sum->fz = 0.0;
+}
+
+//
 struct lennard_jones *init_lennard_jones(void)
 {
   // Allocate memory
@@ -20,32 +48,8 @@ struct lennard_jones *init_lennard_jones(void)
   lj->sum_i = aligned_alloc(ALIGN, sizeof(struct force) * N_PARTICLES_LOCAL);
   lj->sum = aligned_alloc(ALIGN, sizeof(struct force));
 
-  // Init energy to 0
-  lj->energy = 0.0;
-
-  // Init force
-  for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
-    {
-      for (uint64_t j = 0; j < N_PARTICLES_LOCAL; j++)
-        {
-          lj->f[i][j].fx = 0.0;
-          lj->f[i][j].fy = 0.0;
-          lj->f[i][j].fz = 0.0;
-        }
-    }
-
-  // Init sum of force apply on particle i to 0
-  for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
-    {
-      lj->sum_i[i].fx = 0.0;
-      lj->sum_i[i].fy = 0.0;
-      lj->sum_i[i].fz = 0.0;
-    }
-
-  // Init sum of force to 0
-  lj->sum->fx = 0.0;
-  lj->sum->fy = 0.0;
-  lj->sum->fz = 0.0;
+  // Set to 0
+  reset_lennard_jones(lj);
 
   return lj;
 }
@@ -66,32 +70,8 @@ void free_lennard_jones(struct lennard_jones *restrict lj)
 void lennard_jones(struct lennard_jones *restrict lj,
                    const struct particle *restrict p)
 {
-  // Init energy to 0
-  lj->energy = 0.0;
-
-  // Init force
-  for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
-    {
-      for (uint64_t j = 0; j < N_PARTICLES_LOCAL; j++)
-        {
-          lj->f[i][j].fx = 0.0;
-          lj->f[i][j].fy = 0.0;
-          lj->f[i][j].fz = 0.0;
-        }
-    }
-
-  // Init sum of force apply on particle i to 0
-  for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
-    {
-      lj->sum_i[i].fx = 0.0;
-      lj->sum_i[i].fy = 0.0;
-      lj->sum_i[i].fz = 0.0;
-    }
-
-  // Init sum of force to 0
-  lj->sum->fx = 0.0;
-  lj->sum->fy = 0.0;
-  lj->sum->fz = 0.0;
+  // Set to 0
+  reset_lennard_jones(lj);
 
   // Compute
   for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
@@ -153,32 +133,8 @@ void periodical_lennard_jones(struct lennard_jones *restrict plj,
                               const struct translation_vector *restrict tv,
                               const double r_cut, const uint64_t n)
 {
-  // Init energy to 0
-  plj->energy = 0.0;
-
-  // Init force
-  for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
-    {
-      for (uint64_t j = 0; j < N_PARTICLES_LOCAL; j++)
-        {
-          plj->f[i][j].fx = 0.0;
-          plj->f[i][j].fy = 0.0;
-          plj->f[i][j].fz = 0.0;
-        }
-    }
-
-  // Init sum of force apply on particle i to 0
-  for (uint64_t i = 0; i < N_PARTICLES_LOCAL; i++)
-    {
-      plj->sum_i[i].fx = 0.0;
-      plj->sum_i[i].fy = 0.0;
-      plj->sum_i[i].fz = 0.0;
-    }
-
-  // Init sum of force to 0
-  plj->sum->fx = 0.0;
-  plj->sum->fy = 0.0;
-  plj->sum->fz = 0.0;
+  // Set to 0
+  reset_lennard_jones(plj);
 
   // Compute
   for (uint64_t k = 0; k < n; k++)

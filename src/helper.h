@@ -15,20 +15,24 @@
 #define R_CONSTANT          1.99e-3
 #define M_I                 18.0
 #define T_0                 300.0
+#define GAMMA               0.01
 
 // General constant
-#ifdef __AVX512__
+#if __AVX512__
 #define ALIGN 64
-#elif defined __AVX__
+#elif __AVX__
 #define ALIGN 32
-#elif defined __SSE__
+#elif __SSE__
 #define ALIGN 16
 #else
 #error "Support only x86 architecture with at least SSE instruction set"
 #endif
 
 // Maths macros
-#define abs_double(x) (x < 0.0 ? -x : x)
+#define abs_double(x)    (x < 0.0 ? -x : x)
+#define norm(x)          (square(x))
+#define norm_2d(x, y)    (square(x) + square(y))
+#define norm_3d(x, y, z) (square(x) + square(y) + square(z))
 
 #define square(x) ((x) * (x))
 #define cube(x)   ((x) * (x) * (x))
@@ -42,6 +46,7 @@ extern uint64_t N_PARTICLES_TOTAL;
 extern uint64_t N_PARTICLES_LOCAL;
 extern uint64_t LOCAL_EQUAL_TOTAL;
 extern uint64_t N_DL;
+extern double R_CUT;
 
 // Handle errors
 enum

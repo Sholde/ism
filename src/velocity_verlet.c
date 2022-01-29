@@ -10,33 +10,39 @@
 #define sign_function(x, y) (y < 0.0 ? -x : x)
 
 // Initialize seed
-void init_random(void)
+static inline void init_random(void)
 {
   srand(time(NULL));
 }
 
-struct ket *compute_kinetic_energy_and_temperature(const struct kinetic_moment
-                                                   *restrict km)
+struct ket *init_ket(void)
+{
+  // Allocate return structure
+  struct ket *restrict ket = aligned_alloc(ALIGN, sizeof(struct ket));
+
+  ket->kinetic_energy = 0.0;
+  ket->temperature = 0.0;
+
+  return ket;
+}
+
+void compute_kinetic_energy_and_temperature(struct ket *restrict ket,
+                                            const struct kinetic_moment
+                                            *restrict km)
 {
   // Kinetic energy
-  double kinetic_energy = 0.0;
+  ket->kinetic_energy = 0.0;
 
   for (uint64_t i = 0; i < N_PARTICLES_TOTAL; i++)
     {
-      kinetic_energy += square(km[i].px) + square(km[i].py) + square(km[i].pz);
+      ket->kinetic_energy += square(km[i].px) + square(km[i].py) + square(km[i].pz);
     }
 
-  kinetic_energy /= (M_I * FORCE_CONVERSION_x2);
+  ket->kinetic_energy /= (M_I * FORCE_CONVERSION_x2);
 
   // Temperature
-  double temperature = kinetic_energy / (N_DL * R_CONSTANT);
+  ket->temperature = ket->kinetic_energy / (N_DL * R_CONSTANT);
 
-  // Allocate return structure
-  struct ket *restrict ket = aligned_alloc(ALIGN, sizeof(struct ket));
-  ket->kinetic_energy = kinetic_energy;
-  ket->temperature = temperature;
-
-  return ket;
 }
 
 void free_ket(struct ket *restrict ket)
@@ -47,7 +53,8 @@ void free_ket(struct ket *restrict ket)
 static void first_recalibration(struct kinetic_moment *restrict km)
 {
   // Compute kinetic energy and temperature for this kinetic moment
-  struct ket *restrict ket = compute_kinetic_energy_and_temperature(km);
+  struct ket *restrict ket = init_ket();
+  compute_kinetic_energy_and_temperature(ket, km);
 
   // Recalibration
   double rapport = sqrt((N_DL * R_CONSTANT * T_0) / ket->kinetic_energy);
@@ -137,20 +144,26 @@ void free_kinetic_moment(struct kinetic_moment *restrict km)
 }
 
 void velocity_verlet(struct particle *restrict p,
-                     struct translation_vector *restrict tv,
+                     __attribute__ ((unused)) struct translation_vector *restrict tv,
                      struct lennard_jones *restrict plj,
                      struct kinetic_moment *restrict km,
-                     const double r_cut)
+                     __attribute__ ((unused)) const double r_cut)
 {
   // Compute forces
+#if CLASSICAL
+  lennard_jones(plj, p);
+#elif PERIODICAL
   periodical_lennard_jones(plj, p, tv, r_cut, N_SYM);
+#else
+  lennard_jones(plj, p);
+#endif
 
   for (uint64_t i = 0; i < N_PARTICLES_TOTAL; i++)
     {
       // Update kinetic moments
-      km[i].px -= DT * FORCE_CONVERSION * plj->sum_i[i].fx / 2.0;
-      km[i].py -= DT * FORCE_CONVERSION * plj->sum_i[i].fy / 2.0;
-      km[i].pz -= DT * FORCE_CONVERSION * plj->sum_i[i].fz / 2.0;
+      km[i].px -= DT * FORCE_CONVERSION * plj->sum_i[i].fx * 0.5;
+      km[i].py -= DT * FORCE_CONVERSION * plj->sum_i[i].fy * 0.5;
+      km[i].pz -= DT * FORCE_CONVERSION * plj->sum_i[i].fz * 0.5;
     }
 
   for (uint64_t i = 0; i < N_PARTICLES_TOTAL; i++)
@@ -162,13 +175,30 @@ void velocity_verlet(struct particle *restrict p,
     }
 
   // Re-compute forces
+#if CLASSICAL
+  lennard_jones(plj, p);
+#elif PERIODICAL
   periodical_lennard_jones(plj, p, tv, r_cut, N_SYM);
+#else
+  lennard_jones(plj, p);
+#endif
 
   for (uint64_t i = 0; i < N_PARTICLES_TOTAL; i++)
     {
       // Update kinetic moments
-      km[i].px -= DT * FORCE_CONVERSION * plj->sum_i[i].fx / 2.0;
-      km[i].py -= DT * FORCE_CONVERSION * plj->sum_i[i].fy / 2.0;
-      km[i].pz -= DT * FORCE_CONVERSION * plj->sum_i[i].fz / 2.0;
+      km[i].px -= DT * FORCE_CONVERSION * plj->sum_i[i].fx * 0.5;
+      km[i].py -= DT * FORCE_CONVERSION * plj->sum_i[i].fy * 0.5;
+      km[i].pz -= DT * FORCE_CONVERSION * plj->sum_i[i].fz * 0.5;
+    }
+}
+
+void berendsen_thermostat(struct kinetic_moment *restrict km,
+                          struct ket *restrict ket)
+{
+  for (uint64_t i = 0; i < N_PARTICLES_TOTAL; i++)
+    {
+      km[i].px += km[i].px * GAMMA * (ket->temperature / T_0 - 1);
+      km[i].py += km[i].py * GAMMA * (ket->temperature / T_0 - 1);
+      km[i].pz += km[i].pz * GAMMA * (ket->temperature / T_0 - 1);
     }
 }

@@ -7,7 +7,7 @@
 struct particle *get_particles(const char *restrict filename)
 {
   // Begin exploration of the file
-  FILE *restrict  stream = fopen(filename, "r");
+  FILE *restrict stream = fopen(filename, "r");
 
   if (!stream)
     {
