@@ -6,7 +6,7 @@
 // Simulation constants
 #define R_STAR              3.0
 #define EPSILON_STAR        0.2
-#define L                   30.0
+#define L                   50.0
 #define N_SYM               27
 #define TOLERANCE           1.0e-7
 #define DT                  1.0
@@ -30,9 +30,9 @@
 
 // Maths macros
 #define abs_double(x)    (x < 0.0 ? -x : x)
-#define norm(x)          (square(x))
-#define norm_2d(x, y)    (square(x) + square(y))
-#define norm_3d(x, y, z) (square(x) + square(y) + square(z))
+#define norm(x)          (abs_double(x))
+#define norm_2d(x, y)    (abs_double(x) + abs_double(y))
+#define norm_3d(x, y, z) (abs_double(x) + abs_double(y) + abs_double(z))
 
 #define square(x) ((x) * (x))
 #define cube(x)   ((x) * (x) * (x))

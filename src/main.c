@@ -16,7 +16,7 @@ uint64_t N_PARTICLES_TOTAL = 0;
 uint64_t N_PARTICLES_LOCAL = 0;
 uint64_t LOCAL_EQUAL_TOTAL = 1;
 uint64_t N_DL = 0;
-uint64_t N_STEP = 1000;
+uint64_t N_STEP = 10000;
 uint64_t M_STEP = 100;
 double R_CUT = 10.0;
 
@@ -259,7 +259,7 @@ static void run_velocity_verlet(void)
   print_step(0, ket->temperature, ket->kinetic_energy + plj->energy,
              ket->kinetic_energy, plj->energy,
              norm_3d(plj->sum->fx, plj->sum->fz, plj->sum->fz));
-  store_particles(OUTPUT_FILE, p, ket->temperature, 0);
+  store_particles(OUTPUT_FILE, p, 0);
 
   // Take time before
   clock_gettime(CLOCK_MONOTONIC, &simulation_clock);
@@ -279,7 +279,7 @@ static void run_velocity_verlet(void)
                  norm_3d(plj->sum->fx, plj->sum->fz, plj->sum->fz));
 
       //
-      store_particles(OUTPUT_FILE, p, ket->temperature, step);
+      store_particles(OUTPUT_FILE, p, step);
 
       //
       if (step % M_STEP == 0)

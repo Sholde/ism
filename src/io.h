@@ -14,6 +14,6 @@ void reset_file(const char *filename);
  * @return
  */
 void store_particles(const char *filename, const struct particle *restrict p,
-                     const double temperature, const uint64_t ite);
+                     const uint64_t ite);
 
 #endif // _IO_H_

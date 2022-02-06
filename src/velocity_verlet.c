@@ -42,7 +42,6 @@ void compute_kinetic_energy_and_temperature(struct ket *restrict ket,
 
   // Temperature
   ket->temperature = ket->kinetic_energy / (N_DL * R_CONSTANT);
-
 }
 
 void free_ket(struct ket *restrict ket)
@@ -158,17 +157,17 @@ void velocity_verlet(struct particle *restrict p,
   lennard_jones(plj, p);
 #endif
 
+  // Update kinetic moments
   for (uint64_t i = 0; i < N_PARTICLES_TOTAL; i++)
     {
-      // Update kinetic moments
       km[i].px -= DT * FORCE_CONVERSION * plj->sum_i[i].fx * 0.5;
       km[i].py -= DT * FORCE_CONVERSION * plj->sum_i[i].fy * 0.5;
       km[i].pz -= DT * FORCE_CONVERSION * plj->sum_i[i].fz * 0.5;
     }
 
+  // Update positions
   for (uint64_t i = 0; i < N_PARTICLES_TOTAL; i++)
     {
-      // Update positions
       p[i].x += DT * km[i].px / M_I;
       p[i].y += DT * km[i].py / M_I;
       p[i].z += DT * km[i].pz / M_I;
@@ -183,9 +182,9 @@ void velocity_verlet(struct particle *restrict p,
   lennard_jones(plj, p);
 #endif
 
+  // Update kinetic moments
   for (uint64_t i = 0; i < N_PARTICLES_TOTAL; i++)
     {
-      // Update kinetic moments
       km[i].px -= DT * FORCE_CONVERSION * plj->sum_i[i].fx * 0.5;
       km[i].py -= DT * FORCE_CONVERSION * plj->sum_i[i].fy * 0.5;
       km[i].pz -= DT * FORCE_CONVERSION * plj->sum_i[i].fz * 0.5;
